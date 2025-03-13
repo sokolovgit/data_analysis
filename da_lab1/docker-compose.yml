@@ -8,6 +8,7 @@ services:
       POSTGRES_DB: data_analysis
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - /private/tmp:/private/tmp
     ports:
       - "5432:5432"
 
@@ -22,8 +23,6 @@ services:
     volumes:
       - pgadmin_data:/var/lib/pgadmin
 
-
 volumes:
   pgdata:
   pgadmin_data:
-
