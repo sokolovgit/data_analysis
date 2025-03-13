@@ -1,0 +1,6 @@
+movies.csv -  https://www.kaggle.com/datasets/danielgrijalvas/movies?resource=download
+imdb - https://developer.imdb.com/non-commercial-datasets/
+budget - https://www.kaggle.com/datasets/alessandrolobello/the-ultimate-film-statistics-dataset-for-ml
+box office - https://www.kaggle.com/datasets/parthdande/movies-box-office-collection-data-2000-2024?select=2010-2024+Movies+Box+Ofice+Collection.csv
+oscar - https://www.kaggle.com/datasets/unanimad/the-oscar-award
+
