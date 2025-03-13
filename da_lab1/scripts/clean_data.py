@@ -96,12 +96,37 @@ def clean_movie_data(file_path, output_path):
     print(f"✅ Cleaned data saved to {output_path}")
 
 
-# Apply the cleaning function for box office data
+def clean_oscar_award_data(file_path, output_path):
+    """Clean specific columns in the oscar award dataset."""
+    print(f"Processing {file_path}...")
+
+    # Read CSV
+    df = pd.read_csv(file_path)
+
+    # Drop rows with any missing values
+    df = df.dropna()
+
+    # Ensure the 'year_film', 'year_ceremony', and 'ceremony' columns are integers
+    df["year_film"] = df["year_film"].astype(int)
+    df["year_ceremony"] = df["year_ceremony"].astype(int)
+    df["ceremony"] = df["ceremony"].astype(int)
+
+    # Ensure the 'winner' column is boolean
+    df["winner"] = df["winner"].astype(bool)
+
+    # Save the cleaned data
+    df.to_csv(output_path, index=False)
+    print(f"✅ Cleaned data saved to {output_path}")
+
+
 # clean_box_office_data(
 #     "da_lab1/data/box_office.csv", "da_lab1/clean_data/box_office.csv"
 # )
 
-# Apply the cleaning function for movie data
-clean_movie_data("da_lab1/data/movies.csv", "da_lab1/clean_data/movies.csv")
+# clean_movie_data("da_lab1/data/movies.csv", "da_lab1/clean_data/movies.csv")
+
+clean_oscar_award_data(
+    "da_lab1/data/oscar_award.csv", "da_lab1/clean_data/oscar_award.csv"
+)
 
 print("✅ Data cleaning complete! Cleaned files are in 'clean_data/'")
