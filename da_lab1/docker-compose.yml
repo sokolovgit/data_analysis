@@ -1,0 +1,28 @@
+services:
+  database:
+    image: postgres:16
+    container_name: data_analysis_db
+    environment:
+      POSTGRES_USER: data_analysis
+      POSTGRES_PASSWORD: data_analysis
+      POSTGRES_DB: data_analysis
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - /private/tmp:/private/tmp
+    ports:
+      - "5432:5432"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: data_analysis_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: data_analysis@data.com
+      PGADMIN_DEFAULT_PASSWORD: data_analysis
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+volumes:
+  pgdata:
+  pgadmin_data:
