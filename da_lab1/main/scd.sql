@@ -1,69 +1,78 @@
--- SCD Type 2
-ALTER TABLE main.dim_movie
-    ADD COLUMN valid_from DATE    DEFAULT CURRENT_DATE,
-    ADD COLUMN valid_to   DATE NULL,
-    ADD COLUMN is_current BOOLEAN DEFAULT TRUE;
+-- SCD type 3 for dim_movie
+CREATE OR REPLACE FUNCTION main.update_dim_movie(
+    p_id INT,
+    p_new_name TEXT,
+    p_new_release_date DATE
+)
+RETURNS VOID AS $$
+BEGIN
+    UPDATE main.dim_movie
+    SET previous_release_date = release_date,  -- Store old value
+        release_date = p_new_release_date,    -- Overwrite with new value
+        name = p_new_name
+    WHERE id = p_id;
+END;
+$$ LANGUAGE plpgsql;
 
--- 1. Оновлення dim_movie (SCD Type 2)
-WITH new_movies AS (SELECT DISTINCT name     AS title,
-                                    released AS release_date,
-                                    year,
-                                    genre,
-                                    rating,
-                                    runtime,
-                                    budget,
-                                    company  AS production_company,
-                                    country
-                    FROM staging.movies)
-INSERT
-INTO main.dim_movie (title, release_date, year, genre, rating, runtime_minutes, budget, production_company, country,
-                     valid_from, valid_to, is_current)
-SELECT nm.*, CURRENT_DATE, NULL, TRUE
-FROM new_movies nm
-         LEFT JOIN main.dim_movie dm ON nm.title = dm.title AND nm.year = dm.year
-WHERE dm.movie_id IS NULL
-   OR (dm.is_current = TRUE AND (
-    nm.genre <> dm.genre OR nm.rating <> dm.rating OR nm.runtime <> dm.runtime_minutes
-    ));
+-- SCD type 3 for dim_company
+CREATE OR REPLACE FUNCTION main.update_dim_company(
+    p_id INT,
+    p_new_name TEXT
+)
+RETURNS VOID AS $$
+BEGIN
+    UPDATE main.dim_company
+    SET previous_name = name,  -- Store old value
+        name = p_new_name      -- Overwrite with new value
+    WHERE id = p_id;
+END;
+$$ LANGUAGE plpgsql;
 
--- Закриття старих записів у разі змін
-UPDATE main.dim_movie
-SET valid_to   = CURRENT_DATE,
-    is_current = FALSE
-WHERE is_current = TRUE
-  AND movie_id IN (SELECT old.movie_id
-                   FROM main.dim_movie old
-                            JOIN staging.movies new ON old.title = new.name AND old.year = new.year
-                   WHERE old.genre <> new.genre
-                      OR old.rating <> new.rating
-                      OR old.runtime_minutes <> new.runtime);
+-- SCD type 2 for dim_director
+CREATE OR REPLACE FUNCTION main.update_dim_director(
+    p_person_id INT
+)
+RETURNS VOID AS $$
+BEGIN
+    -- Set the current record to expired
+    UPDATE main.dim_director
+    SET valid_to = now(), is_current = FALSE
+    WHERE person_id = p_person_id AND is_current = TRUE;
 
--- 2. Оновлення dim_director (SCD Type 1)
-INSERT INTO main.dim_director (name, birth_year, death_year, professions)
-SELECT DISTINCT director_name, director_birth_year, director_death_year, director_professions
-FROM staging.movie_budget
-WHERE director_name IS NOT NULL
-ON CONFLICT (director_id) DO UPDATE
-    SET birth_year  = EXCLUDED.birth_year,
-        death_year  = EXCLUDED.death_year,
-        professions = EXCLUDED.professions;
+    -- Insert a new record
+    INSERT INTO main.dim_director (person_id, valid_from, valid_to, is_current)
+    VALUES (p_person_id, now(), NULL, TRUE);
+END;
+$$ LANGUAGE plpgsql;
 
--- 3. Оновлення dim_oscar_category
-INSERT INTO main.dim_oscar_category (category, canon_category)
-SELECT DISTINCT category, canon_category
-FROM staging.oscar_awards
-ON CONFLICT (category_id) DO NOTHING;
+-- SCD type 2 for dim_writer
+CREATE OR REPLACE FUNCTION main.update_dim_writer(
+    p_person_id INT
+)
+RETURNS VOID AS $$
+BEGIN
+    UPDATE main.dim_writer
+    SET valid_to = now(), is_current = FALSE
+    WHERE person_id = p_person_id AND is_current = TRUE;
 
--- 4. Оновлення dim_star
-INSERT INTO main.dim_star (name)
-SELECT DISTINCT star
-FROM staging.movies
-WHERE star IS NOT NULL
-ON CONFLICT (star_id) DO NOTHING;
+    INSERT INTO main.dim_writer (person_id, valid_from, valid_to, is_current)
+    VALUES (p_person_id, now(), NULL, TRUE);
+END;
+$$ LANGUAGE plpgsql;
 
--- 5. Оновлення dim_writer
-INSERT INTO main.dim_writer (name)
-SELECT DISTINCT writer
-FROM staging.movies
-WHERE writer IS NOT NULL
-ON CONFLICT (writer_id) DO NOTHING;
+-- SCD type 2 for dim_star
+
+CREATE OR REPLACE FUNCTION main.update_dim_star(
+    p_person_id INT
+)
+RETURNS VOID AS $$
+BEGIN
+    UPDATE main.dim_star
+    SET valid_to = now(), is_current = FALSE
+    WHERE person_id = p_person_id AND is_current = TRUE;
+
+    INSERT INTO main.dim_star (person_id, valid_from, valid_to, is_current)
+    VALUES (p_person_id, now(), NULL, TRUE);
+END;
+$$ LANGUAGE plpgsql;
+
